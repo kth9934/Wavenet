@@ -18,7 +18,7 @@ from keras.engine.topology import Layer
 from taehyoung_util import *
 vals = []
 dim = 256
-path = "../vctk/VCTK-Corpus/test_train"
+path = "/home/kth99343733/wavenet/test"
 wavfile = raw_audio(path,vals)            # len(wavfile) = 총 sample 개수 ,  #wavfile[i] = 한 샘플
 wavfile = padseq(wavfile, padding = 'pre')
 filters = 2
