@@ -1,27 +1,31 @@
 import numpy as np
 import wave
 import os
+from glob import glob
 from os import listdir
 from os.path import isfile, join
 import struct
 import matplotlib.pyplot as plt
-from librosa.core import resample
+from librosa.core import load, resample
 from scipy.io import wavfile
 
 def load_audio(wav, path):
     # wav = wavfile
-    fs, raw = wavfile.read(os.path.join(path,wav))         #fs = sample rate, raw는 값
-    frames = resample(raw, fs, 16000)
-    frames = [float(val) / pow(2,15) for val in frames]    # pow는 제곱을 시켜줌. 2의 15승,
-                                                           # mu-law companding에서 x의 범위가 -1 ~ 1이므로 맞춰주기 위함.
-    return frames
+    raw, fs = load(os.path.join(path,wav), sr=16000, mono=True)         #fs = sample rate, raw는 값
+    #frames = resample(raw, fs, 10000)
+
+    return raw
 
 
 
-def mu_quantizing(frames):
+def mu_quantizing(raw):
     quantized = []
-    for f in frames:
+    for f in raw:
         mu_padded = np.sign(f)*np.log(1+255*np.absolute(f))/np.log(256)  # mu-law 함수에 값을 집어넣음
+        if (mu_padded > 1 ):
+            mu_padded = 1
+        elif (mu_padded < -1):
+            mu_padded = -1
         quantized.append(int((mu_padded+1)*255/2)) # 집어넣은 후 quantizing해주기 위해 0~255범위로 표현
     return quantized
 
@@ -43,21 +47,23 @@ def mu_to_onehot(quantized):
 # print(mu_to_onehot(quantized))
 
 def load_to_onehot(wavfile, path , dim): #concatenate several stages
-    frames = load_audio(wavfile, path)
-    quantized = mu_quantizing(frames)
-    onehot = mu_to_onehot(quantized)
-    return onehot
+     frames = load_audio(wavfile, path)
+     quantized = mu_quantizing(frames)
+     onehot = mu_to_onehot(quantized)
+     return onehot
 
 
-def raw_audio(path, vals):                                       #trainset 가져오는 함수
+# def raw_audio(path, vals):                                       #trainset 가져오는 함수
+#
+#     files = [f for f in listdir(path) if isfile(join(path, f))]
+#
+#     for i in range(len(files)):
+#         samples = load_to_onehot(files[i] ,path, 256)
+#         vals.append(samples)
+#
+#     return vals
 
-    files = [f for f in listdir(path) if isfile(join(path, f))]
 
-    for i in range(len(files)):
-        samples = load_to_onehot(files[i] ,path, 256)
-        vals.append(samples)
-
-    return vals
 
 
 # print(load_to_onehot("sample.wav", "", 256))    최종확인
